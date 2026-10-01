@@ -37,10 +37,9 @@ _MODEL = None
 def get_model(model_size: str):
     global _MODEL
     if _MODEL is None or getattr(_MODEL, "_clip_model_size", None) != model_size:
-        try:
-            _MODEL = WhisperModel(model_size, device="cuda", compute_type="float16")
-        except Exception:
-            _MODEL = WhisperModel(model_size, device="cpu", compute_type="int8")
+        # Windows-friendly default: avoid requiring CUDA DLLs such as cublas64_12.dll.
+        # CPU int8 works without a separate NVIDIA CUDA installation.
+        _MODEL = WhisperModel(model_size, device="cpu", compute_type="int8")
         _MODEL._clip_model_size = model_size
     return _MODEL
 

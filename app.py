@@ -4,6 +4,7 @@ import json
 import re
 import subprocess
 import shutil
+import imageio_ffmpeg
 
 # Keep Gradio uploads/cache in a user-writable Windows AppData directory.
 BASE = Path(__file__).resolve().parent

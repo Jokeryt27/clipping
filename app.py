@@ -11,6 +11,8 @@ LOCAL_APP = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "AIShortsCl
 GRADIO_TEMP = LOCAL_APP / "gradio_temp"
 GRADIO_TEMP.mkdir(parents=True, exist_ok=True)
 os.environ["GRADIO_TEMP_DIR"] = str(GRADIO_TEMP)
+os.environ["GRADIO_CACHE"] = str(GRADIO_TEMP / "cache")
+(GRADIO_TEMP / "cache").mkdir(parents=True, exist_ok=True)
 os.environ["TMP"] = str(GRADIO_TEMP)
 os.environ["TEMP"] = str(GRADIO_TEMP)
 os.environ["TMPDIR"] = str(GRADIO_TEMP)

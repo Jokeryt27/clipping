@@ -5,11 +5,15 @@ import re
 import subprocess
 import shutil
 
-# Keep Gradio's temporary uploads/cache inside the project instead of a protected temp path.
+# Keep Gradio uploads/cache in a user-writable Windows AppData directory.
 BASE = Path(__file__).resolve().parent
-GRADIO_TEMP = BASE / "gradio_temp"
+LOCAL_APP = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "AIShortsClipper"
+GRADIO_TEMP = LOCAL_APP / "gradio_temp"
 GRADIO_TEMP.mkdir(parents=True, exist_ok=True)
-os.environ.setdefault("GRADIO_TEMP_DIR", str(GRADIO_TEMP))
+os.environ["GRADIO_TEMP_DIR"] = str(GRADIO_TEMP)
+os.environ["TMP"] = str(GRADIO_TEMP)
+os.environ["TEMP"] = str(GRADIO_TEMP)
+os.environ["TMPDIR"] = str(GRADIO_TEMP)
 
 import gradio as gr
 from faster_whisper import WhisperModel

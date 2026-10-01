@@ -169,7 +169,9 @@ def viral_score(text, base_score):
     return int(max(0, min(100, round(score))))
 
 def detect_face_center(video_path, start, duration):
-    if cv2 is None:
+    # Face detection is optional. Some Windows OpenCV installations can expose
+    # cv2 without the Haar Cascade API; in that case use a centered crop.
+    if cv2 is None or not hasattr(cv2, "CascadeClassifier"):
         return 0.5
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():

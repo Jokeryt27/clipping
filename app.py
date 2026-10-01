@@ -1,8 +1,16 @@
 from pathlib import Path
+import os
 import json
 import re
 import subprocess
 import shutil
+
+# Keep Gradio's temporary uploads/cache inside the project instead of a protected temp path.
+BASE = Path(__file__).resolve().parent
+GRADIO_TEMP = BASE / "gradio_temp"
+GRADIO_TEMP.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("GRADIO_TEMP_DIR", str(GRADIO_TEMP))
+
 import gradio as gr
 from faster_whisper import WhisperModel
 try:
@@ -10,7 +18,6 @@ try:
 except ImportError:
     cv2 = None
 
-BASE = Path(__file__).resolve().parent
 OUTPUT = BASE / "outputs"
 DOWNLOADS = BASE / "downloads"
 OUTPUT.mkdir(exist_ok=True)

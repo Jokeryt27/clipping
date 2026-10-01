@@ -280,7 +280,7 @@ def process(video, url, model_size, clip_len, count):
 with gr.Blocks(title="AI Shorts Clipper") as demo:
     gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.8** — use only videos you own or have permission to edit.")
     url = gr.Textbox(label="YouTube URL", placeholder="Paste an authorized YouTube video URL here")
-    video = gr.Video(label="Or choose a local video file")
+    video = gr.Textbox(label="Local video path (optional)", placeholder="C:\\Users\\Joker\\Videos\\myvideo.mp4")
     with gr.Row():
         model = gr.Dropdown(["tiny","base","small","medium"], value="small", label="Whisper model")
         length = gr.Slider(20, 60, value=45, step=5, label="Clip length (seconds)")

@@ -6,6 +6,35 @@ import subprocess
 import shutil
 import imageio_ffmpeg
 
+# Make NVIDIA CUDA DLLs installed by the Python nvidia-* packages visible on Windows.
+# This fixes cublas64_12.dll/cudnn DLL lookup without requiring a system-wide CUDA install.
+def _add_nvidia_dll_paths():
+    try:
+        import importlib.metadata as importlib_metadata
+        import sys
+        roots = []
+        for dist_name in ("nvidia-cublas-cu12", "nvidia-cudnn-cu12", "nvidia-cuda-nvrtc-cu12"):
+            try:
+                dist = importlib_metadata.distribution(dist_name)
+                for f in dist.files or []:
+                    p = Path(dist.locate_file(f))
+                    if p.suffix.lower() == ".dll":
+                        roots.append(str(p.parent))
+            except Exception:
+                pass
+        if roots:
+            os.environ["PATH"] = os.pathsep.join(dict.fromkeys(roots + [os.environ.get("PATH", "")]))
+            if hasattr(os, "add_dll_directory"):
+                for root in dict.fromkeys(roots):
+                    try:
+                        os.add_dll_directory(root)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+
+_add_nvidia_dll_paths()
+
 # Keep Gradio uploads/cache in a user-writable Windows AppData directory.
 BASE = Path(__file__).resolve().parent
 LOCAL_APP = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "AIShortsClipper"

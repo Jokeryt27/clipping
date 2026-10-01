@@ -4,6 +4,10 @@ import re
 import subprocess
 import gradio as gr
 from faster_whisper import WhisperModel
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 
 BASE = Path(__file__).resolve().parent
 OUTPUT = BASE / "outputs"
@@ -94,6 +98,33 @@ def candidates(segments, clip_len=45, max_clips=5):
             break
     return selected
 
+def detect_face_center(video_path, start, duration):
+    if cv2 is None:
+        return 0.5
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        return 0.5
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    total = cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0
+    video_duration = total / fps if total else duration
+    detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+    centers = []
+    for i in range(8):
+        t = min(start + duration * (i + 0.5) / 8, max(0, video_duration - 0.1))
+        cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000)
+        ok, frame = cap.read()
+        if not ok:
+            continue
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = detector.detectMultiScale(gray, 1.1, 5, minSize=(60, 60))
+        if len(faces):
+            x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
+            centers.append((x + w / 2) / max(1, frame.shape[1]))
+    cap.release()
+    if not centers:
+        return 0.5
+    return max(0.15, min(0.85, sum(centers) / len(centers)))
+
 def make_srt(segments, clip_start, clip_end, out_file):
     lines, idx = [], 1
     def ts(sec):
@@ -117,10 +148,11 @@ def render_clip(video, clip, index, segments):
     srt = OUTPUT / f"short_{index:02d}.srt"
     make_srt(segments, start, end, srt)
 
-    # Relative SRT path keeps the FFmpeg subtitle filter portable on Windows.
+    face_x = detect_face_center(video, start, duration)
+    crop_expr = f"crop=ih*9/16:ih:iw*{face_x}-ih*9/32:0"
     subtitle_file = f"outputs/short_{index:02d}.srt"
     vf = (
-        "crop=ih*9/16:ih:(iw-ih*9/16)/2:0,"
+        crop_expr + ","
         "scale=1080:1920,"
         f"subtitles='{subtitle_file}':force_style="
         "'FontName=Arial,FontSize=18,Bold=1,PrimaryColour=&H00FFFFFF,"
@@ -165,7 +197,7 @@ def process(video, url, model_size, clip_len, count):
         return f"Error: {e}", [], ""
 
 with gr.Blocks(title="AI Shorts Clipper") as demo:
-    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.1** — use only videos you own or have permission to edit.")
+    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.2** — use only videos you own or have permission to edit.")
     url = gr.Textbox(label="YouTube URL", placeholder="Paste an authorized YouTube video URL here")
     video = gr.Video(label="Or choose a local video file", type="filepath")
     with gr.Row():

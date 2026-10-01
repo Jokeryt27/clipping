@@ -98,6 +98,31 @@ def candidates(segments, clip_len=45, max_clips=5):
             break
     return selected
 
+def make_hook_title(text):
+    clean = re.sub(r"\\s+", " ", text).strip()
+    sentences = re.split(r"(?<=[.!?])\\s+", clean)
+    first = sentences[0] if sentences else clean
+    words = first.split()
+    hook = " ".join(words[:14]).strip(" .,!?:;")
+    if len(hook) < 12:
+        hook = "You need to hear this"
+    title = hook[:70]
+    if not title.lower().startswith(("why ", "how ", "the ")):
+        title = "This changes everything: " + title
+    return hook, title[:90]
+
+def viral_score(text, base_score):
+    t = text.lower()
+    score = 45.0
+    score += min(base_score * 2.5, 20)
+    score += min(len(text) / 120, 10)
+    score += 8 if "?" in text else 0
+    score += 5 if "!" in text else 0
+    curiosity = ["secret", "truth", "mistake", "why", "how", "never", "actually",
+                 "surprising", "crazy", "important"]
+    score += min(sum(1 for w in curiosity if re.search(r"\\b" + re.escape(w) + r"\\b", t)) * 2, 12)
+    return int(max(0, min(100, round(score))))
+
 def detect_face_center(video_path, start, duration):
     if cv2 is None:
         return 0.5
@@ -182,6 +207,8 @@ def process(video, url, model_size, clip_len, count):
         outputs, report = [], []
         for i, clip in enumerate(clips, 1):
             mp4, srt = render_clip(video, clip, i, segments)
+            hook, title = make_hook_title(clip["text"])
+            vscore = viral_score(clip["text"], clip["score"])
             outputs.append(mp4)
             report.append({
                 "clip": i, "start": round(clip["start"], 2),
@@ -192,12 +219,12 @@ def process(video, url, model_size, clip_len, count):
 
         report_file = OUTPUT / "clips.json"
         report_file.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-        return f"Done: {len(outputs)} clips generated with burned captions.", outputs, str(report_file)
+        return f"Done: {len(outputs)} clips generated with burned captions + hooks/titles.", outputs, str(report_file)
     except Exception as e:
         return f"Error: {e}", [], ""
 
 with gr.Blocks(title="AI Shorts Clipper") as demo:
-    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.2** — use only videos you own or have permission to edit.")
+    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.3** — use only videos you own or have permission to edit.")
     url = gr.Textbox(label="YouTube URL", placeholder="Paste an authorized YouTube video URL here")
     video = gr.Video(label="Or choose a local video file", type="filepath")
     with gr.Row():

@@ -186,6 +186,17 @@ def make_srt(segments, clip_start, clip_end, out_file):
         idx += 1
     Path(out_file).write_text("\n".join(lines), encoding="utf-8")
 
+def refine_clip_boundaries(clip, segments, pad=0.35):
+    relevant = [x for x in segments if x["start"] < clip["end"] and x["end"] > clip["start"]]
+    if not relevant:
+        return clip
+    start = max(0.0, relevant[0]["start"] - pad)
+    end = relevant[-1]["end"] + pad
+    target = clip["end"] - clip["start"]
+    if end - start > target * 1.12:
+        end = start + target
+    return {**clip, "start": round(start, 2), "end": round(max(start + 5, end), 2)}
+
 def render_clip(video, clip, index, segments):
     start, end = clip["start"], clip["end"]
     duration = end - start
@@ -226,6 +237,7 @@ def process(video, url, model_size, clip_len, count):
 
         outputs, report = [], []
         for i, clip in enumerate(clips, 1):
+            clip = refine_clip_boundaries(clip, segments)
             mp4, srt = render_clip(video, clip, i, segments)
             hook, title = make_hook_title(clip["text"])
             vscore = viral_score(clip["text"], clip["score"])
@@ -249,7 +261,7 @@ def process(video, url, model_size, clip_len, count):
         return f"Error: {e}", [], "", ""
 
 with gr.Blocks(title="AI Shorts Clipper") as demo:
-    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.6** — use only videos you own or have permission to edit.")
+    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.7** — use only videos you own or have permission to edit.")
     url = gr.Textbox(label="YouTube URL", placeholder="Paste an authorized YouTube video URL here")
     video = gr.Video(label="Or choose a local video file", type="filepath")
     with gr.Row():

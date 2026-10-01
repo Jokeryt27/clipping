@@ -3,3 +3,4 @@ gradio>=5.0.0
 yt-dlp>=2025.1.0
 opencv-python>=4.10.0
 imageio-ffmpeg>=0.6.0
+av>=18.0,<19

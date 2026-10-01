@@ -99,8 +99,8 @@ def candidates(segments, clip_len=45, max_clips=5):
     return selected
 
 def make_hook_title(text):
-    clean = re.sub(r"\\s+", " ", text).strip()
-    sentences = re.split(r"(?<=[.!?])\\s+", clean)
+    clean = re.sub(r"\s+", " ", text).strip()
+    sentences = re.split(r"(?<=[.!?])\s+", clean)
     first = sentences[0] if sentences else clean
     words = first.split()
     hook = " ".join(words[:14]).strip(" .,!?:;")
@@ -120,7 +120,7 @@ def viral_score(text, base_score):
     score += 5 if "!" in text else 0
     curiosity = ["secret", "truth", "mistake", "why", "how", "never", "actually",
                  "surprising", "crazy", "important"]
-    score += min(sum(1 for w in curiosity if re.search(r"\\b" + re.escape(w) + r"\\b", t)) * 2, 12)
+    score += min(sum(1 for w in curiosity if re.search(r"\b" + re.escape(w) + r"\b", t)) * 2, 12)
     return int(max(0, min(100, round(score))))
 
 def detect_face_center(video_path, start, duration):
@@ -213,6 +213,9 @@ def process(video, url, model_size, clip_len, count):
             report.append({
                 "clip": i, "start": round(clip["start"], 2),
                 "end": round(clip["end"], 2), "score": clip["score"],
+                "viral_score": vscore,
+                "suggested_hook": hook,
+                "suggested_title": title,
                 "transcript_preview": clip["text"][:300],
                 "video": mp4, "captions": srt
             })

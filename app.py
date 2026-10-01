@@ -45,18 +45,22 @@ def get_model(model_size: str):
     return _MODEL
 
 def diagnostics():
-    ffmpeg = "OK" if shutil.which("ffmpeg") else "MISSING"
+    ffmpeg = "OK" if ffmpeg_exe() else "MISSING"
     ytdlp = "OK" if shutil.which("yt-dlp") else "MISSING"
     opencv = "OK" if cv2 is not None else "MISSING"
     return f"FFmpeg: {ffmpeg} | yt-dlp: {ytdlp} | OpenCV: {opencv}"
 
-def ffmpeg_ok():
+def ffmpeg_exe():
+    system_ffmpeg = shutil.which("ffmpeg")
+    if system_ffmpeg:
+        return system_ffmpeg
     try:
-        subprocess.run(["ffmpeg", "-version"], stdout=subprocess.DEVNULL,
-                       stderr=subprocess.DEVNULL, check=True)
-        return True
+        return imageio_ffmpeg.get_ffmpeg_exe()
     except Exception:
-        return False
+        return None
+
+def ffmpeg_ok():
+    return ffmpeg_exe() is not None
 
 def run(cmd):
     return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -237,7 +241,7 @@ def render_clip(video, clip, index, segments):
         "OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=1,"
         "Alignment=2,MarginV=140'"
     )
-    cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", video, "-t", str(duration),
+    cmd = [ffmpeg_exe(), "-y", "-ss", str(start), "-i", video, "-t", str(duration),
            "-vf", vf, "-c:v", "libx264", "-preset", "fast", "-crf", "20",
            "-c:a", "aac", "-b:a", "128k", str(out)]
     run(cmd)

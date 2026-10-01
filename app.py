@@ -79,16 +79,35 @@ def score_segment(text):
 
 def candidates(segments, clip_len=45, max_clips=5):
     results = []
-    for s in segments:
-        start = max(0, s["start"] - 4)
-        end = start + clip_len
-        nearby = [x for x in segments if x["start"] < end and x["end"] > start]
+    for i, seg in enumerate(segments):
+        # Start near a natural transcript boundary instead of cutting mid-sentence.
+        start = max(0.0, seg["start"] - 2.0)
+        end_target = start + clip_len
+
+        nearby = [x for x in segments if x["start"] < end_target and x["end"] > start]
+        if len(nearby) < 2:
+            continue
+
+        # Extend/trim to nearby segment boundaries while staying close to target length.
+        natural_start = nearby[0]["start"]
+        natural_end = nearby[-1]["end"]
+        if natural_end - natural_start < clip_len * 0.75:
+            continue
+
+        if natural_end - natural_start > clip_len * 1.15:
+            natural_end = natural_start + clip_len
+
         joined = " ".join(x["text"] for x in nearby)
         if len(joined) < 35:
             continue
-        results.append({"start": start, "end": end,
-                        "score": round(score_segment(joined[:1200]), 2),
-                        "text": joined[:1200]})
+
+        results.append({
+            "start": round(max(0.0, natural_start), 2),
+            "end": round(natural_end, 2),
+            "score": round(score_segment(joined[:1200]), 2),
+            "text": joined[:1200]
+        })
+
     results.sort(key=lambda x: x["score"], reverse=True)
     selected = []
     for c in results:
@@ -227,7 +246,7 @@ def process(video, url, model_size, clip_len, count):
         return f"Error: {e}", [], ""
 
 with gr.Blocks(title="AI Shorts Clipper") as demo:
-    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.4** — use only videos you own or have permission to edit.")
+    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.5** — use only videos you own or have permission to edit.")
     url = gr.Textbox(label="YouTube URL", placeholder="Paste an authorized YouTube video URL here")
     video = gr.Video(label="Or choose a local video file", type="filepath")
     with gr.Row():

@@ -2,6 +2,7 @@ from pathlib import Path
 import json
 import re
 import subprocess
+import shutil
 import gradio as gr
 from faster_whisper import WhisperModel
 try:
@@ -211,17 +212,17 @@ def render_clip(video, clip, index, segments):
 
 def process(video, url, model_size, clip_len, count):
     if not ffmpeg_ok():
-        return "FFmpeg नहीं मिला। FFmpeg install करके PATH में add करें.", [], ""
+        return "FFmpeg नहीं मिला। FFmpeg install करके PATH में add करें.", [], "", ""
     try:
         if url and url.strip():
             video = download_video(url)
         if not video:
-            return "Video file या YouTube URL डालें.", [], ""
+            return "Video file या YouTube URL डालें.", [], "", ""
 
         segments, _ = transcribe(video, model_size)
         clips = candidates(segments, int(clip_len), int(count))
         if not clips:
-            return "कोई पर्याप्त candidate moment नहीं मिला.", [], ""
+            return "कोई पर्याप्त candidate moment नहीं मिला.", [], "", ""
 
         outputs, report = [], []
         for i, clip in enumerate(clips, 1):
@@ -241,12 +242,14 @@ def process(video, url, model_size, clip_len, count):
 
         report_file = OUTPUT / "clips.json"
         report_file.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-        return f"Done: {len(outputs)} clips generated with burned captions + hooks/titles.", outputs, str(report_file)
+        zip_base = OUTPUT / "shorts_package"
+        zip_file = Path(shutil.make_archive(str(zip_base), "zip", root_dir=OUTPUT))
+        return f"Done: {len(outputs)} clips generated. ZIP package ready.", outputs, str(report_file), str(zip_file)
     except Exception as e:
-        return f"Error: {e}", [], ""
+        return f"Error: {e}", [], "", ""
 
 with gr.Blocks(title="AI Shorts Clipper") as demo:
-    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.5** — use only videos you own or have permission to edit.")
+    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.6** — use only videos you own or have permission to edit.")
     url = gr.Textbox(label="YouTube URL", placeholder="Paste an authorized YouTube video URL here")
     video = gr.Video(label="Or choose a local video file", type="filepath")
     with gr.Row():
@@ -257,7 +260,8 @@ with gr.Blocks(title="AI Shorts Clipper") as demo:
     status = gr.Textbox(label="Status")
     gallery = gr.File(label="Generated Shorts")
     report = gr.File(label="Clip report")
-    button.click(process, [video, url, model, length, count], [status, gallery, report])
+    package = gr.File(label="📦 Download all Shorts (ZIP)")
+    button.click(process, [video, url, model, length, count], [status, gallery, report, package])
 
 if __name__ == "__main__":
     demo.launch(inbrowser=True)

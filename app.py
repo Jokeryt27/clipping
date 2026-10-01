@@ -16,6 +16,8 @@ os.environ["GRADIO_CACHE"] = str(GRADIO_TEMP / "cache")
 os.environ["TMP"] = str(GRADIO_TEMP)
 os.environ["TEMP"] = str(GRADIO_TEMP)
 os.environ["TMPDIR"] = str(GRADIO_TEMP)
+# Gradio may derive its internal cache from the current working directory.
+os.chdir(GRADIO_TEMP)
 
 import gradio as gr
 from faster_whisper import WhisperModel

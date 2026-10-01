@@ -37,9 +37,16 @@ _MODEL = None
 def get_model(model_size: str):
     global _MODEL
     if _MODEL is None or getattr(_MODEL, "_clip_model_size", None) != model_size:
-        # Windows-friendly default: avoid requiring CUDA DLLs such as cublas64_12.dll.
-        # CPU int8 works without a separate NVIDIA CUDA installation.
-        _MODEL = WhisperModel(model_size, device="cpu", compute_type="int8")
+        # Prefer NVIDIA GPU when CTranslate2 can see it. Fall back to CPU if
+        # the CUDA runtime/model does not fit or cannot be initialized.
+        try:
+            import ctranslate2
+            if ctranslate2.get_cuda_device_count() > 0:
+                _MODEL = WhisperModel(model_size, device="cuda", compute_type="float16")
+            else:
+                _MODEL = WhisperModel(model_size, device="cpu", compute_type="int8")
+        except Exception:
+            _MODEL = WhisperModel(model_size, device="cpu", compute_type="int8")
         _MODEL._clip_model_size = model_size
     return _MODEL
 

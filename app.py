@@ -4,6 +4,7 @@ import json
 import re
 import subprocess
 import shutil
+import traceback
 import imageio_ffmpeg
 
 # Make NVIDIA CUDA DLLs installed by the Python nvidia-* packages visible on Windows.
@@ -321,7 +322,9 @@ def process(video, url, model_size, clip_len, count):
         zip_file = Path(shutil.make_archive(str(zip_base), "zip", root_dir=OUTPUT))
         return f"Done: {len(outputs)} clips generated. ZIP package ready.", outputs, str(report_file), str(zip_file)
     except Exception as e:
-        return f"Error: {e}", [], "", ""
+        detail = traceback.format_exc()
+        print(detail, flush=True)
+        return f"Error: {type(e).__name__}: {e}\\n\\nSee terminal for full traceback.", [], "", ""
 
 with gr.Blocks(title="AI Shorts Clipper") as demo:
     gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.8** — use only videos you own or have permission to edit.")

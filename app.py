@@ -28,6 +28,12 @@ def get_model(model_size: str):
         _MODEL._clip_model_size = model_size
     return _MODEL
 
+def diagnostics():
+    ffmpeg = "OK" if shutil.which("ffmpeg") else "MISSING"
+    ytdlp = "OK" if shutil.which("yt-dlp") else "MISSING"
+    opencv = "OK" if cv2 is not None else "MISSING"
+    return f"FFmpeg: {ffmpeg} | yt-dlp: {ytdlp} | OpenCV: {opencv}"
+
 def ffmpeg_ok():
     try:
         subprocess.run(["ffmpeg", "-version"], stdout=subprocess.DEVNULL,
@@ -261,7 +267,7 @@ def process(video, url, model_size, clip_len, count):
         return f"Error: {e}", [], "", ""
 
 with gr.Blocks(title="AI Shorts Clipper") as demo:
-    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.7** — use only videos you own or have permission to edit.")
+    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.8** — use only videos you own or have permission to edit.")
     url = gr.Textbox(label="YouTube URL", placeholder="Paste an authorized YouTube video URL here")
     video = gr.Video(label="Or choose a local video file", type="filepath")
     with gr.Row():

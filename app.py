@@ -180,9 +180,9 @@ def render_clip(video, clip, index, segments):
         crop_expr + ","
         "scale=1080:1920,"
         f"subtitles='{subtitle_file}':force_style="
-        "'FontName=Arial,FontSize=18,Bold=1,PrimaryColour=&H00FFFFFF,"
-        "OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=1,"
-        "Alignment=2,MarginV=120'"
+        "'FontName=Arial,FontSize=20,Bold=1,PrimaryColour=&H00FFFFFF,"
+        "OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=1,"
+        "Alignment=2,MarginV=140'"
     )
     cmd = ["ffmpeg", "-y", "-ss", str(start), "-i", video, "-t", str(duration),
            "-vf", vf, "-c:v", "libx264", "-preset", "fast", "-crf", "20",
@@ -227,7 +227,7 @@ def process(video, url, model_size, clip_len, count):
         return f"Error: {e}", [], ""
 
 with gr.Blocks(title="AI Shorts Clipper") as demo:
-    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.3** — use only videos you own or have permission to edit.")
+    gr.Markdown("# 🎬 AI Shorts Clipper\n**Free/local-first V1.4** — use only videos you own or have permission to edit.")
     url = gr.Textbox(label="YouTube URL", placeholder="Paste an authorized YouTube video URL here")
     video = gr.Video(label="Or choose a local video file", type="filepath")
     with gr.Row():
